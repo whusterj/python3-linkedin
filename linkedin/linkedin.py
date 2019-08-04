@@ -26,20 +26,21 @@ allowed.  I will put the ones here in the comments that I have removed:
 
 PERMISSIONS = enum('Permission',
                    # Default Permissions
+                   LITE_PROFILE='r_liteprofile',
                    BASIC_PROFILE='r_basicprofile',
                    EMAIL_ADDRESS='r_emailaddress',
                    SHARE='w_share',
-                   
+
                    # Company Permissions
                    COMPANY_ADMIN='rw_company_admin',
-                   
+
                    # Permissions you need to apply to : https://help.linkedin.com/app/ask/path/api-dvr
                    FULL_PROFILE='r_fullprofile',
                    CONTACT_INFO='r_contactinfo'
                    )
 
 ENDPOINTS = enum('LinkedInURL',
-                 PEOPLE='https://api.linkedin.com/v1/people',
+                 PEOPLE='https://api.linkedin.com/v2/me',
                  PEOPLE_SEARCH='https://api.linkedin.com/v1/people-search',
                  GROUPS='https://api.linkedin.com/v1/groups',
                  POSTS='https://api.linkedin.com/v1/posts',
@@ -160,7 +161,7 @@ class LinkedInApplication(object):
         assert authentication or token, 'Either authentication instance or access token is required'
         self.authentication = authentication
         if not self.authentication:
-            self.authentication = LinkedInAuthentication('', '', '')
+            self.authentication = LinkedInAuthentication('', '', '', permissions=[LITE_PROFILE])
             self.authentication.token = AccessToken(token, None)
 
     def make_request(self, method, url, data=None, params=None, headers=None,
@@ -182,7 +183,7 @@ class LinkedInApplication(object):
             kw.update({'auth': auth})
         else:
             params.update({'oauth2_access_token': self.authentication.token.access_token})
-        
+
         return requests.request(method.upper(), url, **kw)
 
     def get_profile(self, member_id=None, member_url=None, selectors=None, params=None, headers=None, member_email=None):
@@ -201,11 +202,11 @@ class LinkedInApplication(object):
             url = '%s/~' % ENDPOINTS.PEOPLE
         if selectors:
             url = '%s:(%s)' % (url, LinkedInSelector.parse(selectors))
-        
+
         if params is None:
             params = dict()
         params.update({'format': 'json'})
-        
+
         response = self.make_request('GET', url, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
@@ -360,7 +361,7 @@ class LinkedInApplication(object):
                       params=None, headers=None):
         identifiers = []
         url = ENDPOINTS.COMPANIES
-        
+
         if company_ids:
             identifiers += list(map(str, company_ids))
 
@@ -369,14 +370,14 @@ class LinkedInApplication(object):
 
         if identifiers:
             url = '%s::(%s)' % (url, ','.join(identifiers))
-            
+
         if selectors:
             url = '%s:(%s)' % (url, LinkedInSelector.parse(selectors))
 
         response = self.make_request('GET', url, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
-    
+
     def get_statistics_company_page(self, company_id, params=None,
                                     headers=None):
         url = "%s/%s/company-statistics" % (
@@ -385,7 +386,7 @@ class LinkedInApplication(object):
         response = self.make_request('GET', url, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
-    
+
     def get_specific_company_update(self, company_id, update_id, params=None,
                                     headers=None):
         url = "%s/%s/updates/key=%s?format=json" % (
@@ -394,13 +395,13 @@ class LinkedInApplication(object):
         response = self.make_request('GET', url, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
-    
+
     def get_company_updates(self, company_id, params=None, headers=None):
         url = '%s/%s/updates' % (ENDPOINTS.COMPANIES, str(company_id))
         response = self.make_request('GET', url, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
-    
+
     def get_num_followers(self, company_id, params=None, headers=None):
         url = '%s/%s/num-followers' % (ENDPOINTS.COMPANIES, str(company_id))
         response = self.make_request('GET', url, params=params, headers=headers)
@@ -613,14 +614,14 @@ class LinkedInApplication(object):
         response = self.make_request('GET', url, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
-        
+
     def get_companies_user_is_admin(self, params=None, headers=None):
-        
+
         if params == None:
             params = dict()
-            
+
         params.update({"is-company-admin": True})
-        
+
         response = self.make_request('GET', ENDPOINTS.COMPANIES, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
@@ -636,7 +637,7 @@ class LinkedInApplication(object):
         response = self.make_request('GET', url, params=params, headers=headers)
         raise_for_error(response)
         return response.json()
-    
+
     def comment_as_company(self, company_id, update_key, comment):
         comment = {'comment': comment}
         url = '%s/updates/key=%s/update-comments-as-company' % (ENDPOINTS.COMPANIES, company_id, update_key)
