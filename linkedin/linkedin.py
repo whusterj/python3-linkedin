@@ -157,11 +157,12 @@ class LinkedInSelector(object):
 class LinkedInApplication(object):
     BASE_URL = 'https://api.linkedin.com'
 
-    def __init__(self, authentication=None, token=None):
+    def __init__(self, authentication=None, token=None, permissions=None):
         assert authentication or token, 'Either authentication instance or access token is required'
         self.authentication = authentication
+        self.permissions = permissions or [PERMISSIONS.LITE_PROFILE]
         if not self.authentication:
-            self.authentication = LinkedInAuthentication('', '', '', permissions=[LITE_PROFILE])
+            self.authentication = LinkedInAuthentication('', '', '', permissions=self.permissions)
             self.authentication.token = AccessToken(token, None)
 
     def make_request(self, method, url, data=None, params=None, headers=None,
